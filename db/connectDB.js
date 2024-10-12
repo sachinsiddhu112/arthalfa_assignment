@@ -2,18 +2,20 @@ import  { Sequelize, DataTypes } from 'sequelize';
 import dotenv from 'dotenv'
 
 dotenv.config();
-
+//create connection with database using Sequelize.
+//Provide these variables in .env or environment variables.
 const sequelize = new Sequelize(process.env.DATABASE_NAME,process.env.USER, process.env.PASSWORD, {
     host: process.env.HOST,
     dialect: 'mysql'
   });
 
   
-// Test database connection
+// Testing database connection
 sequelize.authenticate()
 .then(() => console.log('Connection to MySQL has been established successfully.'))
 .catch(err => console.error('Unable to connect to the database:', err));
 
+//Produc Model with necessary constraints.
 const Product = sequelize.define('Product', {
     id: {
       type: DataTypes.INTEGER,

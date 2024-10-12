@@ -4,9 +4,21 @@ import Product from '../db/connectDB.js';
 
 export const fetchAllProducts = async (req, res) => {
     try {
-        // Get all products
-        const products = await Product.findAll();
-        res.status(200).json(products);
+        // Get all products with pagination.
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 3;
+        const offset = (page - 1) * limit;
+        const products = await Product.findAndCountAll({
+            limit: limit,
+            offset: offset,
+        });
+        // Send response with paginated products and metadata
+        return res.status(200).json({
+            currentPage: page,
+            totalPages: Math.ceil(products?.count / limit), 
+            totalProducts: products?.count,
+            products: products?.rows,
+        });
     }
     catch (err) {
         console.log(err);
@@ -15,19 +27,19 @@ export const fetchAllProducts = async (req, res) => {
 }
 
 export const getProduct = async (req, res) => {
-const { id } = req.params;
-try{
-// Get one product by ID
-const product = await Product.findOne({ where: { id } });
-if(!product){//product not found with given id.
-    return res.status(404).json({message:"Product Not Found."}); 
-}
-res.status(200).json(product);
-}
-catch(err){
-    console.log(err);
-    res.status(500).json({error:"Server Side Error."});
-}
+    const { id } = req.params;
+    try {
+        // Get one product by ID
+        const product = await Product.findOne({ where: { id } });
+        if (!product) {//product not found with given id.
+            return res.status(404).json({ message: "Product Not Found." });
+        }
+        res.status(200).json(product);
+    }
+    catch (err) {
+        console.log(err);
+        res.status(500).json({ error: "Server Side Error." });
+    }
 }
 
 export const createProduct = async (req, res) => {
@@ -62,15 +74,12 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
     const { name, price, category, description } = req.body;
     const { id } = req.params;
-
     if ((name != undefined && typeof name !== 'string') ||
         (price != undefined && typeof price !== 'number' && !Number.isInteger(price)) ||
         (category != undefined && typeof category !== 'string') ||
         (description != undefined && typeof description !== 'string')) {
         return res.status(400).json({ message: "Invalid datatypes." });
     }
-
-
     try {
         const product = await Product.findOne({ where: { id } });
         if (!product) {
@@ -86,29 +95,26 @@ export const updateProduct = async (req, res) => {
             { where: { id: 1 } }
         );
         res.status(200).json(updatedProduct);
-
     }
     catch (err) {
         console.log("error in updating the product", err);
         res.status(500).json({ error: "Server side error." })
     }
-
 }
 
 export const deleteProduct = async (req, res) => {
     const { id } = req.params;
-
-    try{
-    // Get one product by ID
-    const product = await Product.destroy({ where: { id } });
-    if(!product){
-        return res.status(404).json({message:"Product Not Found."}); 
+    try {
+        // Get one product by ID
+        const product = await Product.destroy({ where: { id } });
+        if (!product) {
+            return res.status(404).json({ message: "Product Not Found." });
+        }
+        res.status(200).json(product);
     }
-    res.status(200).json(product);
-    }
-    catch(err){
+    catch (err) {
         console.log(err);
-        res.status(500).json({error:"Server Side Error."});
+        res.status(500).json({ error: "Server Side Error." });
     }
 }
 
