@@ -1,21 +1,39 @@
 import Product from '../db/connectDB.js';
-
+import { Op } from 'sequelize';
 
 
 export const fetchAllProducts = async (req, res) => {
     try {
-        // Get all products with pagination.
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 3;
-        const offset = (page - 1) * limit;
-        const products = await Product.findAndCountAll({
-            limit: limit,
-            offset: offset,
-        });
-        // Send response with paginated products and metadata
+        // Get all products with pagination or without pagination.
+        //all other queries work same way with pagination or without pagination.
+        const page = parseInt(req.query.page,10) ;
+        const limit = parseInt(req.query.limit,10);
+        const sortBy = req.query.sortBy ? req.query.sortBy.split(',') : ['id']; 
+        const order = req.query.order === 'DESC' ? 'DESC' : 'ASC'; 
+        const sortOrder = sortBy.map(field => [field, order]);
+        const searchWithCatOrName = req.query.search ? req.query.search : "" ;
+        //create query.
+        let options = {
+            where: {
+              [Op.or]: [
+                { name: { [Op.like]: `%${searchWithCatOrName}%` } },
+                { category: { [Op.like]: `%${searchWithCatOrName}%` } },
+              ],
+            },
+            order:sortOrder, 
+          };
+          //if limit and page provided in req.query,it means user want response in the form of pagination.
+          if (limit && page) {
+            options = {
+              ...options,
+              limit: limit, 
+              offset: (page - 1) * limit, 
+            };
+          }
+        const products = await Product.findAndCountAll(options);
         return res.status(200).json({
             currentPage: page,
-            totalPages: Math.ceil(products?.count / limit), 
+            totalPages: Math.ceil(products?.count / limit),
             totalProducts: products?.count,
             products: products?.rows,
         });
